@@ -1,0 +1,73 @@
+name: 压缩CloudflareSpeedTest
+
+on:
+  schedule:
+    - cron: '0 3,20 * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      ver: ${{ steps.getversion.outputs.ver }}
+      cver: ${{ steps.getversion.outputs.cver }}
+    steps:
+      -
+        name: 检查版本
+        id: getversion
+        run: |
+          ver=`curl https://api.github.com/repos/XIU2/CloudflareSpeedTest/releases/latest | jq -r '.tag_name'`
+          cver=`curl https://api.github.com/repos/lmq8267/CloudflareSpeedTest/releases/latest | jq -r '.tag_name'`
+          echo "ver=${ver}" >> $GITHUB_OUTPUT
+          echo "cver=${cver}" >> $GITHUB_OUTPUT
+
+  build:
+    runs-on: ubuntu-latest
+    needs: check
+    if: ${{ needs.check.outputs.ver != needs.check.outputs.cver }}
+    steps:
+      -
+        name: 检查代码仓库
+        uses: actions/checkout@v3
+      - 
+        name: 压缩
+        run: |
+          git clone https://github.com/lmq8267/cloudflared.git /opt/st
+          cd /opt/st
+          tag=`curl https://api.github.com/repos/XIU2/CloudflareSpeedTest/releases/latest | grep 'tag_name' | cut -d\" -f4`
+          echo tag=$tag
+          sudo chmod 0777 /etc/resolv.conf
+          cat >>/etc/resolv.conf <<EOF
+          nameserver 8.8.8.8 
+          nameserver 4.4.4.4
+          EOF
+          curl -k -L -o "/opt/st/CloudflareST_linux_mipsle.tar.gz" "https://github.com/XIU2/CloudflareSpeedTest/releases/download/$tag/CloudflareST_linux_mipsle.tar.gz" 
+          tar -xzvf /opt/st/CloudflareST_linux_mipsle.tar.gz -C /opt/st
+          tar -xvf /opt/st/upx-3.95-amd64_linux.tar.xz -C /opt
+          chmod 777 /opt/upx-3.95-amd64_linux/upx
+          chmod 777 /opt/st/strip
+          /opt/st/strip CloudflareST
+          /opt/upx-3.95-amd64_linux/upx --lzma --best CloudflareST
+          tar czvf CloudflareST.tar.gz CloudflareST cfst_hosts.sh ip.txt ip6.txt 使用+错误+反馈说明.txt
+          echo $(md5sum CloudflareST.tar.gz | awk '{print $1;}') >MD5.txt
+      - 
+        name: 发布Release
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ secrets.c8 }}
+          body: |
+           这是mipsel平台的二进制程序压缩版
+           CloudflareST.tar.gz有教程
+           也可以直接去官方项目查看使用说明
+          tag_name: ${{ needs.check.outputs.ver }}
+          files: |
+              /opt/st/CloudflareST.tar.gz
+              /opt/st/CloudflareST
+              /opt/st/MD5.txt
+      - 
+       name: 删除工作流
+       uses: GitRML/delete-workflow-runs@main
+       with:
+        token: ${{ secrets.c8 }}
+        retain_days: 2
+        keep_minimum_runs: 0
