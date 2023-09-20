@@ -59,6 +59,7 @@ jobs:
            这是mipsel平台的二进制程序压缩版
            CloudflareST.tar.gz有教程
            也可以直接去官方项目查看使用说明
+           MD5.txt是CloudflareST.tar.gz的MD5校验值
           tag_name: ${{ needs.check.outputs.ver }}
           files: |
               /opt/st/CloudflareST.tar.gz
