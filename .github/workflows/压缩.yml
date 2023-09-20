@@ -48,7 +48,7 @@ jobs:
           chmod 777 /opt/st/strip
           /opt/st/strip CloudflareST
           /opt/upx-3.95-amd64_linux/upx --lzma --best CloudflareST
-          tar czvf CloudflareST.tar.gz CloudflareST cfst_hosts.sh ip.txt ip6.txt 使用+错误+反馈说明.txt
+          tar czvf CloudflareST.tar.gz CloudflareST cfst_hosts.sh ip.txt ipv6.txt 使用+错误+反馈说明.txt
           echo $(md5sum CloudflareST.tar.gz | awk '{print $1;}') >MD5.txt
       - 
         name: 发布Release
