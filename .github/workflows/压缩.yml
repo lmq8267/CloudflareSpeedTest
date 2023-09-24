@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: '0 3,20 * * *'
   workflow_dispatch:
+env:
+  TZ: Asia/Shanghai
 
 jobs:
   check:
@@ -50,15 +52,20 @@ jobs:
           /opt/upx-3.95-amd64_linux/upx --lzma --best CloudflareST
           tar czvf CloudflareST.tar.gz CloudflareST cfst_hosts.sh ip.txt ipv6.txt 使用+错误+反馈说明.txt
           echo $(md5sum CloudflareST.tar.gz | awk '{print $1;}') >MD5.txt
+          echo "build_time=$(date '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
       - 
         name: 发布Release
         uses: softprops/action-gh-release@v1
         with:
           token: ${{ secrets.c8 }}
           body: |
+           上传时间 ：${{ env.build_time }}
+           
            这是mipsel平台的二进制程序压缩版
+           
            CloudflareST.tar.gz有教程
            也可以直接去官方项目查看使用说明
+           
            MD5.txt是CloudflareST.tar.gz的MD5校验值
           tag_name: ${{ needs.check.outputs.ver }}
           files: |
